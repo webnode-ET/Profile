@@ -1,99 +1,160 @@
-<!DOCTYPE html><html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Web Node_ETH - Digital Solutions</title>
-<style>
-    body {font-family: Arial, sans-serif; margin:0; padding:0; color:#333;}
-    header {background:#004aad; color:white; padding:20px 0; text-align:center;}
-    header h1 {margin:0; font-size:2em;}
-    nav {display:flex; justify-content:center; gap:20px; background:#003080; padding:10px 0;}
-    nav a {color:white; text-decoration:none; font-weight:bold;}
-    section {padding:40px 20px; max-width:1200px; margin:auto;}
-    h2 {text-align:center; margin-bottom:30px; color:#004aad;}
-    .cards {display:flex; flex-wrap:wrap; gap:20px; justify-content:center;}
-    .card {border:1px solid #ccc; border-radius:10px; padding:20px; width:250px; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-    .card img {width:100px; height:100px; margin-bottom:15px;}
-    .btn {display:inline-block; margin-top:10px; padding:10px 20px; background:#004aad; color:white; border:none; border-radius:5px; text-decoration:none;}
-    footer {background:#003080; color:white; text-align:center; padding:20px 0; margin-top:40px;}
-    form {max-width:500px; margin:auto; display:flex; flex-direction:column; gap:10px;}
-    input, textarea {padding:10px; border:1px solid #ccc; border-radius:5px; width:100%;}
-    input[type="submit"] {background:#004aad; color:white; border:none; cursor:pointer;}
-    @media(max-width:768px){.cards{flex-direction:column; align-items:center;}}
-</style>
-</head>
-<body><header>
-    <h1>Web Node_ETH</h1>
-    <p>Custom Digital Solutions for Businesses & Events</p>
-</header><nav>
-    <a href="#services">Services</a>
-    <a href="#products">Products</a>
-    <a href="#contact">Contact</a>
-</nav><section id="services">
-    <h2>Our Services</h2>
-    <div class="cards">
-        <div class="card">
-            <img src="https://img.icons8.com/ios-filled/100/000000/code.png"/>
-            <h3>Website Development</h3>
-            <p>Custom websites tailored for your business.</p>
-            <a href="#" class="btn">Learn More</a>
-        </div>
-        <div class="card">
-            <img src="https://img.icons8.com/ios-filled/100/000000/business-card.png"/>
-            <h3>E-Business Cards</h3>
-            <p>Create digital business cards instantly.</p>
-            <a href="#" class="btn">Try Now</a>
-        </div>
-        <div class="card">
-            <img src="https://img.icons8.com/ios-filled/100/000000/server.png"/>
-            <h3>Local Hosting</h3>
-            <p>Reliable local hosting for websites and apps.</p>
-            <a href="#" class="btn">Get Started</a>
-        </div>
-        <div class="card">
-            <img src="https://img.icons8.com/ios-filled/100/000000/maintenance.png"/>
-            <h3>System Solutions</h3>
-            <p>Customized solutions and technical support.</p>
-            <a href="#" class="btn">Learn More</a>
-        </div>
-    </div>
-</section><section id="products">
-    <h2>Our Products</h2>
-    <div class="cards">
-        <div class="card">
-            <img src="https://img.icons8.com/ios-filled/100/000000/bingo.png"/>
-            <h3>Bingo WN</h3>
-            <p>Play, host, and manage Bingo digitally. Powered by Web Node_ETH.</p>
-            <a href="#" class="btn">Play Now</a>
-        </div>
-        <div class="card">
-            <img src="https://img.icons8.com/ios-filled/100/000000/business-card.png"/>
-            <h3>E-Business Card</h3>
-            <p>Create and share your professional digital business card.</p>
-            <a href="#" class="btn">Create</a>
-        </div>
-        <div class="card">
-            <img src="https://img.icons8.com/ios-filled/100/000000/video.png"/>
-            <h3>E Thank-You</h3>
-            <p>Send personalized QR video thank-you gifts for events.</p>
-            <a href="#" class="btn">Send Gift</a>
-        </div>
-        <div class="card">
-            <img src="https://img.icons8.com/ios-filled/100/000000/event-accepted.png"/>
-            <h3>Event Management System</h3>
-            <p>Organize and manage events efficiently online.</p>
-            <a href="#" class="btn">Manage Events</a>
-        </div>
-    </div>
-</section><section id="contact">
-    <h2>Contact Us</h2>
-    <form>
-        <input type="text" name="name" placeholder="Your Name" required/>
-        <input type="email" name="email" placeholder="Your Email" required/>
-        <textarea name="message" placeholder="Your Message" rows="4" required></textarea>
-        <input type="submit" value="Send Message"/>
-    </form>
-</section><footer>
-    &copy; 2025 Web Node_ETH | Powered by Web Node_ETH
-</footer></body>
-              </html>
+import os
+import sqlite3
+from aiogram import Bot, Dispatcher, types
+from aiogram.utils import executor
+from dotenv import load_dotenv
+from config import BOT_TOKEN, UPLOAD_FOLDER, LANGUAGES
+from messages import MESSAGES
+
+load_dotenv()
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(bot)
+
+# User language storage (in-memory, can upgrade to DB later)
+user_lang = {}
+
+# Helper: ensure directory exists
+def ensure_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+ensure_dir(UPLOAD_FOLDER)
+
+# --- DATABASE SETUP ---
+conn = sqlite3.connect("db.sqlite")
+cursor = conn.cursor()
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS events(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    description TEXT,
+    date TEXT,
+    time TEXT,
+    location TEXT,
+    gps_lat REAL,
+    gps_long REAL,
+    invitation_photo TEXT,
+    schedule TEXT
+)
+""")
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS rsvps(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER,
+    guest_name TEXT,
+    attendees INTEGER,
+    comments TEXT,
+    file_path TEXT
+)
+""")
+conn.commit()
+conn.close()
+
+# --- COMMANDS ---
+
+# Start command
+@dp.message_handler(commands=['start'])
+async def start(message: types.Message):
+    text = MESSAGES["start"]["en"] + "\n" + MESSAGES["choose_language"]["en"]
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add("English", "Amharic")
+    await message.answer(text, reply_markup=keyboard)
+
+# Language selection
+@dp.message_handler(lambda message: message.text in ["English", "Amharic"])
+async def choose_language(message: types.Message):
+    lang = "en" if message.text == "English" else "am"
+    user_lang[message.from_user.id] = lang
+    await message.answer("Language set." if lang=="en" else "ቋንቋ ተለዋዋጭ ሆነ።", reply_markup=types.ReplyKeyboardRemove())
+
+# Admin: Create event
+@dp.message_handler(commands=['create_event'])
+async def create_event(message: types.Message):
+    lang = user_lang.get(message.from_user.id, "en")
+    await message.answer(
+        "Send event details in this format:\nTitle|Description|Date|Time|Location|GPS_Lat|GPS_Long|Schedule"
+        if lang=="en" else
+        "ዝርዝሩን በዚህ ቅርጽ ይላኩ፦\nርዕስ|መግለጫ|ቀን|ሰዓት|ቦታ|GPS_Lat|GPS_Long|Schedule"
+    )
+
+# Save event
+@dp.message_handler(lambda message: "|" in message.text)
+async def save_event(message: types.Message):
+    parts = message.text.split("|")
+    lang = user_lang.get(message.from_user.id, "en")
+    if len(parts) != 8:
+        await message.answer(MESSAGES["incorrect_format"][lang])
+        return
+    conn = sqlite3.connect("db.sqlite")
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO events(title,description,date,time,location,gps_lat,gps_long,schedule)
+    VALUES(?,?,?,?,?,?,?,?)
+    """, (parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], parts[7]))
+    conn.commit()
+    conn.close()
+    await message.answer(MESSAGES["event_created"][lang].format(title=parts[0]))
+
+# Admin: Upload invitation photo
+@dp.message_handler(commands=['upload_photo'])
+async def upload_photo(message: types.Message):
+    parts = message.text.split()
+    lang = user_lang.get(message.from_user.id, "en")
+    if len(parts)!=2 or not parts[1].isdigit():
+        await message.answer("Usage: /upload_photo <event_id>" if lang=="en" else "/upload_photo <event_id> ይጠቀሙ")
+        return
+    event_id = int(parts[1])
+    await message.answer("Send the invitation photo.")
+
+    @dp.message_handler(content_types=['photo'])
+    async def photo_handler(msg: types.Message):
+        photo = msg.photo[-1]
+        path = os.path.join(UPLOAD_FOLDER, f"event_{event_id}_invitation.jpg")
+        await photo.download(destination_file=path)
+        conn = sqlite3.connect("db.sqlite")
+        cursor = conn.cursor()
+        cursor.execute("UPDATE events SET invitation_photo=? WHERE id=?", (path, event_id))
+        conn.commit()
+        conn.close()
+        await msg.answer(MESSAGES["photo_uploaded"][lang])
+
+# List events
+@dp.message_handler(commands=['events'])
+async def list_events(message: types.Message):
+    lang = user_lang.get(message.from_user.id, "en")
+    conn = sqlite3.connect("db.sqlite")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id,title,date,time,location FROM events")
+    events = cursor.fetchall()
+    if not events:
+        await message.answer(MESSAGES["no_events"][lang])
+    else:
+        msg = ""
+        for e in events:
+            msg += f"{e[0]}. {e[1]} | {e[2]} {e[3]} | {e[4]}\n"
+        await message.answer(msg)
+    conn.close()
+
+# Map location
+@dp.message_handler(commands=['map'])
+async def map_event(message: types.Message):
+    parts = message.text.split()
+    lang = user_lang.get(message.from_user.id, "en")
+    if len(parts)!=2 or not parts[1].isdigit():
+        await message.answer("Usage: /map <event_id>" if lang=="en" else "/map <event_id> ይጠቀሙ")
+        return
+    event_id = int(parts[1])
+    conn = sqlite3.connect("db.sqlite")
+    cursor = conn.cursor()
+    cursor.execute("SELECT gps_lat,gps_long FROM events WHERE id=?", (event_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        lat, lon = row
+        map_url = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+        await message.answer(f"Map location: {map_url}" if lang=="en" else f"ቦታ: {map_url}")
+    else:
+        await message.answer("Event not found." if lang=="en" else "ኢቨንት አልተገኘም።")
+
+if __name__=="__main__":
+    executor.start_polling(dp, skip_updates=True)
